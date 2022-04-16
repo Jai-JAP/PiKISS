@@ -10,10 +10,6 @@
 clear
 check_board || { echo "Missing file helper.sh. I've tried to download it for you. Try to run the script again." && exit 1; }
 
-readonly COMPILE_PATH="$HOME/sc/gl4es"
-readonly PACKAGES_DEV=(libx11-dev)
-readonly GITHUB_PATH="https://github.com/ptitSeb/gl4es.git"
-
 remove_files() {
     sudo rm -rf ~/wine ~/.wine /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineboot /usr/local/bin/winecfg /usr/local/bin/wineserver /usr/local/bin/winetricks ~/.local/share/applications/winetricks.desktop
 }
