@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# Description : Winex86 + Box86
-# Author      : Jose Cerrejon Gonzalez (ulysess@gmail_dot._com)
-# Version     : 1.0.2 (14/Apr/22)
+# Description : Winex86/64 + Box86/64
+# Author      : Jose Cerrejon Gonzalez (ulysess@gmail_dot._com), Jai A P (jai.jap.318@gmail.com)
+# Version     : 1.1.0 (16/Apr/22)
 # Compatible  : Raspberry Pi 4
 # Info        : https://github.com/ptitSeb/box86/blob/master/docs/X86WINE.md
 #
@@ -15,7 +15,7 @@ readonly PACKAGES_DEV=(libx11-dev)
 readonly GITHUB_PATH="https://github.com/ptitSeb/gl4es.git"
 
 remove_files() {
-    sudo rm -rf ~/wine ~/.wine /usr/local/bin/wine /usr/local/bin/wineboot /usr/local/bin/winecfg /usr/local/bin/wineserver /usr/local/bin/winetricks ~/.local/share/applications/winetricks.desktop
+    sudo rm -rf ~/wine ~/.wine /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineboot /usr/local/bin/winecfg /usr/local/bin/wineserver /usr/local/bin/winetricks ~/.local/share/applications/winetricks.desktop
 }
 
 uninstall() {
@@ -38,23 +38,45 @@ if [[ -e /usr/local/bin/wine ]]; then
 fi
 
 install() {
-    compile_box86_or_64
-    echo -e "\nInstalling Wine x86..."
-    install_winex86
-    echo -e "\nDone!."
-    exit_message
+    if is_userspace_64_bits; then
+        compile_box86
+        compile_box64
+        echo -e "\nInstalling Wine x64..."
+        install_winex64
+        echo -e "\nDone!."
+        exit_message
+    else
+        compile_box86
+        echo -e "\nInstalling Wine x86..."
+        install_winex86
+        echo -e "\nDone!."
+        exit_message
+    fi
 }
 
 install_script_message
-echo "
-Install Winex86 + Box86 thks to PtitSeb
-=======================================
 
- · Compile latest Box86 for you.
- · Install Wine X86 32 bits + Winetricks (Menu > Accesories).
- · Use wine <app>
- · It only runs on Raspberry Pi 4.
-"
+if is_userspace_64_bits; then
+    echo "
+    Install Winex64 + Box86/64 thks to PtitSeb
+    =======================================
+
+    · Compile latest Box86/64 for you.
+    · Install Wine X64 64 bits + Winetricks (Menu > Accesories).
+    · Use wine <app>
+    · It only runs on Raspberry Pi 4.
+    "
+else
+    echo "
+    Install Winex86 + Box86 thks to PtitSeb
+    =======================================
+
+    · Compile latest Box86 for you.
+    · Install Wine X86 32 bits + Winetricks (Menu > Accesories).
+    · Use wine <app>
+    · It only runs on Raspberry Pi 4.
+    "
+fi
 
 read -p "Press [Enter] to continue or [CTRL]+C to abort..."
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Description : Helpers functions
-# Author      : Jose Cerrejon Gonzalez (ulysess@gmail_dot._com)
+# Author      : Jose Cerrejon Gonzalez (ulysess@gmail_dot._com), Jai A P (jai.jap.318@gmail.com)
 #
 readonly PIKISS_DIR=$PWD
 readonly PIKISS_MAGIC_AIR_COPY_PATH=$PIKISS_DIR/res/magic-air-copy-pikiss.txt
@@ -44,7 +44,7 @@ fix_libGLES() {
     fi
 }
 
-box_check_if_latest_version_is_installed() {
+box86_check_if_latest_version_is_installed() {
     local BOX86_FINAL_PATH
     local BOX86_VERSION
     local GIT_VERSION
@@ -63,22 +63,41 @@ box_check_if_latest_version_is_installed() {
     fi
 }
 
-compile_box86_or_64() {
+box64_check_if_latest_version_is_installed() {
+    local BOX64_FINAL_PATH
+    local BOX64_VERSION
+    local GIT_VERSION
+
+    # If Box64 is not installed, skip the process
+    command -v box64 >/dev/null 2>&1 || return 0
+
+    BOX64_FINAL_PATH=$(whereis box64 | awk '{print $2}')
+    BOX64_VERSION=$("$BOX64_FINAL_PATH" -v | awk '{print $5}')
+    GIT_VERSION=$(cd "$HOME/box64" && git rev-parse HEAD | cut -c 1-8)
+
+    if [[ $BOX64_VERSION = "$GIT_VERSION" ]]; then
+        true
+    else
+        false
+    fi
+}
+
+compile_box86() {
     local PI_VERSION_NUMBER
-    local BOX_VERSION
     local SOURCE_PATH
+    local A64_ARGS
+
+    INSTALL_DIRECTORY="$HOME/box86"
+    PI_VERSION_NUMBER=$(get_raspberry_pi_model_number)
+    SOURCE_PATH="https://github.com/ptitSeb/box86"
 
     if is_userspace_64_bits; then
-        BOX_VERSION="box64"
+        install_packages_if_missing gcc-arm-linux-gnueabuhf cmake
+        A64_ARGS="-DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc -DCMAKE_C_COMPILER_TARGET=arm-linux-gnueabihf"
     else
-        BOX_VERSION="box86"
+        install_packages_if_missing cmake
+        A64_ARGS=""
     fi
-
-    INSTALL_DIRECTORY="$HOME/$BOX_VERSION"
-    PI_VERSION_NUMBER=$(get_raspberry_pi_model_number)
-    SOURCE_PATH="https://github.com/ptitSeb/$BOX_VERSION"
-
-    install_packages_if_missing cmake
 
     if [[ ! -d "$INSTALL_DIRECTORY" ]]; then
         echo
@@ -89,50 +108,113 @@ compile_box86_or_64() {
         [[ -d "$INSTALL_DIRECTORY"/build ]] && rm -rf "$INSTALL_DIRECTORY"/build
     fi
 
-    if [[ -f /usr/local/bin/$BOX_VERSION ]]; then
-        if box_check_if_latest_version_is_installed; then
-            echo -e "\nYour $BOX_VERSION is already updated. Skipping...\n"
+    if [[ -f /usr/local/bin/box86 ]]; then
+        if box86_check_if_latest_version_is_installed; then
+            echo -e "\nYour box86 is already the latest version. Skipping...\n"
             return 0
         fi
     fi
 
     mkdir -p build && cd "$_" || exit 1
     echo -e "\nCompiling, please wait...\n"
-    cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
+    case $PI_VERSION_NUMBER in
+        2) cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DRPI2=1 ${A64_ARGS} ;;
+        3) cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DRPI3=1 ${A64_ARGS} ;;
+        4*) cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DRPI4=1 ${A64_ARGS} ;;
+    esac
     make_with_all_cores
     make_install_compiled_app
-    echo -e "\n${BOX_VERSION} successfully installed.\n"
+    echo -e "\nBox86 successfully installed.\n"
 }
 
-install_box86_or_64() {
-    local BINARY_BOX_URL
-    local BOX_VERSION
+compile_box64() {
+    local PI_VERSION_NUMBER
+    local SOURCE_PATH
+
+    INSTALL_DIRECTORY="$HOME/box64"
+    PI_VERSION_NUMBER=$(get_raspberry_pi_model_number)
+    SOURCE_PATH="https://github.com/ptitSeb/box64"
+
+    install_packages_if_missing cmake
 
     if is_userspace_64_bits; then
-        BOX_VERSION="box64"
-    else
-        BOX_VERSION="box86"
+        return 1
     fi
 
-    BINARY_BOX_URL="https://misapuntesde.com/rpi_share/pilabs/${BOX_VERSION}.tar.gz"
-
-    if [[ -f /usr/local/bin/${BOX_VERSION} ]]; then
+    if [[ ! -d "$INSTALL_DIRECTORY" ]]; then
         echo
-        read -p "${BOX_VERSION} already installed. Do you want to update it (Y/n)? " response
+        git clone "$SOURCE_PATH" "$INSTALL_DIRECTORY" && cd "$_" || exit 1
+    else
+        echo -e "\nUpdating the repo if proceed,...\n"
+        cd "$INSTALL_DIRECTORY" && git pull
+        [[ -d "$INSTALL_DIRECTORY"/build ]] && rm -rf "$INSTALL_DIRECTORY"/build
+    fi
+
+    if [[ -f /usr/local/bin/box64 ]]; then
+        if box64_check_if_latest_version_is_installed; then
+            echo -e "\nYour box64 is already the latest version. Skipping...\n"
+            return 0
+        fi
+    fi
+
+    mkdir -p build && cd "$_" || exit 1
+    echo -e "\nCompiling, please wait...\n"
+    if [$PI_VERSION_NUMBER != "4"* ]; then
+        cmake .. -DARM_DYNAREC=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
+    else
+        cmake .. -DRPI4ARM64=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo
+    fi
+    make_with_all_cores
+    make_install_compiled_app
+    echo -e "\nBox64 successfully installed.\n"
+}
+
+install_box86() {
+    local BINARY_BOX86_URL
+
+    BINARY_BOX86_URL="https://misapuntesde.com/rpi_share/pilabs/box86.tar.gz"
+
+    if [[ -f /usr/local/bin/box86 ]]; then
+        echo
+        read -p "Box86 already installed. Do you want to update it (Y/n)? " response
         if [[ $response =~ [Nn] ]]; then
             return 0
         fi
 
-        compile_box86_or_64
+        compile_box86
     fi
 
-    echo -e "\n\nInstalling ${BOX_VERSION}..."
-    download_and_extract "$BINARY_BOX_URL" "$HOME"
-    cd "$HOME"/${BOX_VERSION}/build || exit 1
+    echo -e "\n\nInstalling Box86..."
+    download_and_extract "$BINARY_BOX86_URL" "$HOME"
+    cd "$HOME"/box86/build || exit 1
     sudo make install
     echo
-    ${BOX_VERSION} -v
-    echo -e "\n${BOX_VERSION} has been installed."
+    box86 -v
+    echo -e "\nBox86 has been installed."
+}
+
+install_box64() {
+    local BINARY_BOX64_URL
+
+    BINARY_BOX64_URL="https://misapuntesde.com/rpi_share/pilabs/box64.tar.gz"
+
+    if [[ -f /usr/local/bin/box64 ]]; then
+        echo
+        read -p "Box64 already installed. Do you want to update it (Y/n)? " response
+        if [[ $response =~ [Nn] ]]; then
+            return 0
+        fi
+
+        compile_box64
+    fi
+
+    echo -e "\n\nInstalling Box64..."
+    download_and_extract "$BINARY_BOX64_URL" "$HOME"
+    cd "$HOME"/box64/build || exit 1
+    sudo make install
+    echo
+    box64 -v
+    echo -e "\nBox64 has been installed."
 }
 
 generate_icon_winetricks() {
@@ -197,6 +279,71 @@ install_winex86() {
     if ! is_kernel_64_bits; then
         sudo rm /usr/local/bin/wine
         sudo ln -f -s ~/wine/bin/wine /usr/local/bin/wine
+    fi
+    sudo ln -f -s ~/wine/bin/wineboot /usr/local/bin/wineboot
+    sudo ln -f -s ~/wine/bin/winecfg /usr/local/bin/winecfg
+    sudo ln -f -s ~/wine/bin/wineserver /usr/local/bin/wineserver
+    sudo chmod +x /usr/local/bin/wine /usr/local/bin/wineboot /usr/local/bin/winecfg /usr/local/bin/wineserver
+
+    echo -e "Installing some essential components for you..."
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -qq libstb0 cabextract </dev/null >/dev/null
+
+    wget -q "$WINETRICKS_URL"
+    sudo chmod +x winetricks
+    sudo mv winetricks /usr/local/bin/
+    generate_icon_winetricks
+
+    wine wineboot
+}
+
+install_winex64() {
+    local WINE_PKG_AMD64
+    local WINE_PKG_I386
+    local WINE_PKG
+    local DEBIAN_F_PKGS_URL
+    local WINETRICKS_URL
+    WINE_PKG_AMD64="https://dl.winehq.org/wine-builds/debian/dists/buster/main/binary-amd64/wine-devel-amd64_6.8~buster-1_amd64.deb"
+    WINE_PKG_I386="https://dl.winehq.org/wine-builds/debian/dists/buster/main/binary-i386/wine-devel-i386_6.8~buster-1_i386.deb"
+    WINE_PKG="https://dl.winehq.org/wine-builds/debian/dists/buster/main/binary-amd64/wine-devel_6.8~buster-1_amd64.deb"
+    DEBIAN_F_PKGS_URL="http://ftp.us.debian.org/debian/pool/main/f/faudio/"
+    WINETRICKS_URL="https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks"
+
+    cd || exit 1
+
+    echo -e "Backing old wine versions to ~/wine-old and /usr/local/bin/wine*old...\n"
+    sudo rm -rf ~/wine-old ~/.wine-old /usr/local/bin/wine-old /usr/local/bin/wineboot-old /usr/local/bin/winecfg-old /usr/local/bin/wineserver-old
+    [[ -d ~/wine ]] && sudo mv ~/wine ~/wine-old
+    [[ -d ~/.wine ]] && sudo mv ~/.wine ~/.wine-old
+    [[ -e /usr/local/bin/wine ]] && sudo mv /usr/local/bin/wine /usr/local/bin/wine-old
+    [[ -e /usr/local/bin/wineboot ]] && sudo mv /usr/local/bin/wineboot /usr/local/bin/wineboot-old
+    [[ -e /usr/local/bin/winecfg ]] && sudo mv /usr/local/bin/winecfg /usr/local/bin/winecfg-old
+    [[ -e /usr/local/bin/wineserver ]] && sudo mv /usr/local/bin/wineserver /usr/local/bin/wineserver-old
+
+    echo -e "Downloading...\n"
+    wget -q -O wine_devel-64.deb "$WINE_PKG_AMD64"
+    wget -q -O wine_devel-32.deb "$WINE_PKG_I386"
+    wget -q -O wine.deb "$WINE_PKG"
+    wget -q -r -l1 -np -nd -A "libfaudio0_*~bpo10+1_amd64.deb" "$DEBIAN_F_PKGS_URL"
+    wget -q -r -l1 -np -nd -A "libfaudio0_*~bpo10+1_i386.deb" "$DEBIAN_F_PKGS_URL"
+
+    echo -e "Extract,clean & installing files/pkgs...\n"
+    dpkg-deb -x ./wine_devel-64.deb wine-installer
+    dpkg-deb -x ./wine_devel-32.deb wine-installer
+    dpkg-deb -x ./wine.deb wine-installer
+    dpkg-deb -xv ./libfaudio0_*~bpo10+1_amd64.deb libfaudio
+    dpkg-deb -xv ./libfaudio0_*~bpo10+1_i386.deb libfaudio
+
+    mv ./wine-installer/opt/wine* ~/wine
+    sudo cp -TRv libfaudio/usr/ /usr/
+    rm -rf wine*.deb wine-installer libfaudio0_*~bpo10+1_*.deb libfaudio
+    #sudo rm /usr/local/bin/wine /usr/local/bin/wineboot /usr/local/bin/winecfg /usr/local/bin/wineserver
+
+    echo -e "\nGenerating shortcuts at /usr/local/bin/wine*...\n"
+    echo -e '#!/bin/bash\nsetarch linux64 -L '"$HOME/wine/bin/wine "'"$@"' | sudo tee -a /usr/local/bin/wine >/dev/null
+    if is_kernel_64_bits; then
+        sudo rm /usr/local/bin/wine /usr/local/bin/wine64
+        sudo ln -f -s ~/wine/bin/wine /usr/local/bin/wine
+        sudo ln -f -s ~/wine/bin/wine64 /usr/local/bin/wine64
     fi
     sudo ln -f -s ~/wine/bin/wineboot /usr/local/bin/wineboot
     sudo ln -f -s ~/wine/bin/winecfg /usr/local/bin/winecfg
