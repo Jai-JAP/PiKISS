@@ -3,7 +3,7 @@
 #
 # Description : MAME
 # Author      : Jose Cerrejon Gonzalez (ulysess@gmail_dot._com)
-# Version     : 2.0.0 (3/Apr/22)
+# Version     : 2.0.1 (2/May/22)
 # Compatible  : Raspberry Pi 4
 #
 . ../helper.sh || . ./scripts/helper.sh || . ./helper.sh || wget -q 'https://github.com/jmcerrejon/PiKISS/raw/master/scripts/helper.sh'
@@ -11,8 +11,8 @@ check_board || { echo "Missing file helper.sh. I've tried to download it for you
 clear
 
 readonly INSTALL_DIR="$HOME/games"
-readonly BINARY_URL="https://stickfreaks.com/mame/mame_0.242_armhf_gcc8.7z"
-readonly BINARY_64_BITS_URL="https://stickfreaks.com/mame/mame_0.242_aarch64_gcc8.7z"
+readonly BINARY_URL="https://stickfreaks.com/mame/mame_0.243_armhf_gcc8.7z"
+readonly BINARY_64_BITS_URL="https://stickfreaks.com/mame/mame_0.243_aarch64_gcc8.7z"
 readonly PACKAGES=(p7zip libfreetype6 libsdl2-ttf-2.0-0 libsdl2-2.0-0 libqt5widgets5 libqt5gui5)
 readonly ROMS_URL="https://misapuntesde.com/res/galaxian.zip"
 readonly INPUT=/tmp/temp.$$
@@ -77,10 +77,10 @@ install() {
 }
 
 echo "
-MAME 0.242
+MAME 0.243
 ==========
 
-· More info: https://stickfreaks.com/mame/ | https://www.mamedev.org/?p=511
+· More info: https://stickfreaks.com/mame/ | https://www.mamedev.org/releases/whatsnew_0243.txt
 · KEYS: F3=RESET | F7=Load | Shift+F7=Save | 5=Add 1 Credit Player 1 | 1=Start Player 1 | ESC=Exit
 "
 install

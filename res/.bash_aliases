@@ -29,6 +29,8 @@ alias pk='cd /home/pi/pikiss/ && ./piKiss.sh -nup'
 alias 7zc='7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on file-rpi.7z'
 alias mkfr='find ./ -print > files_required.txt'
 alias open_ports='sudo ss -ltnp'
+alias search_executables_from_here="grep -rIL ."
+alias scrot_here="DISPLAY=:0 scrot -d 5" # It needs scrot pkg
 
 # APT
 alias au='sudo apt-get -qq -y update'
@@ -59,7 +61,7 @@ is_installed() {
     sudo dpkg -l | grep "$1"
 }
 
-mk() {
+take() {
     mkdir "$1" && cd "$_" || exit
 }
 
@@ -92,4 +94,21 @@ extract() {
     else
         echo "'$1' is not a valid file"
     fi
+}
+
+cmake_on_build() {
+    cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
+}
+
+#
+# Compile with all cores
+#
+make_with_all_cores() {
+    local OPTOPT_PARAMS
+
+    OPTOPT_PARAMS=$([[ "$(uname -m)" == 'armv7l' ]] && echo "-fsigned-char -marm -march=armv8-a+crc -mtune=cortex-a72 -mfpu=neon-fp-armv8 -mfloat-abi=hard" || echo "")
+
+    echo -e "\n Compiling with parameters: $OPTOPT_PARAMS"
+    time make -j"$(nproc)" "$OPTOPT_PARAMS"
+    echo
 }

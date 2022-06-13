@@ -132,7 +132,7 @@ smTweaks() {
 
 smGames() {
     if is_userspace_64_bits; then
-        show_dialog_only_32_bits "Abbaye, Blake Stone, GTA"
+        show_dialog_only_32_bits "Abbaye, Blake Stone, GTA, Quake I-II"
     fi
     cmd=(dialog --clear --backtitle "$TITLE" --title "[ Games ]" --menu "Select game from the list:" "$wHEIGHT" "$wWIDTH" "$wHEIGHT")
 
@@ -235,7 +235,7 @@ smGames() {
 
 smEmulators() {
     if is_userspace_64_bits; then
-        show_dialog_only_32_bits "Amiga, Box86/64, MS-Dos, Mame, RetroArch, Redream"
+        show_dialog_only_32_bits "Amiga, Box86/64, MS-Dos, Mame, PS2, RetroArch, Redream"
     fi
     cmd=(dialog --clear --backtitle "$TITLE" --title "[ Emulators ]" --menu "Select emulator from the list:" "$wHEIGHT" "$wWIDTH" "$wHEIGHT")
 
@@ -255,6 +255,7 @@ smEmulators() {
         NES "Nestopia UE is an accurate NES emulator"
         Pifba "Emulates old arcade games using CPS1, CPS2,..."
         PS1 "DuckStation - PlayStation 1, aka. PSX Emulator"
+        PS2 "AetherSX2 is an emulator of the PS Two console"
         PSP "PPSSPP can run your PSP games on your RPi in full HD resolution"
         ResidualVM "Cross-platform 3D game interpreter to play some games"
         RetroArch "Open source frontend for emulators & game/video engines"
@@ -282,6 +283,7 @@ smEmulators() {
         MSX) ./scripts/emus/msx.sh ;;
         NES) ./scripts/emus/nes.sh ;;
         PS1) ./scripts/emus/psx.sh ;;
+        PS2) ./scripts/emus/ps2.sh ;;
         PSP) ./scripts/emus/psp.sh ;;
         Pifba) ./scripts/emus/pifba.sh ;;
         ResidualVM) ./scripts/emus/residual.sh ;;
@@ -296,8 +298,7 @@ smEmulators() {
 
 smMultimedia() {
     if is_userspace_64_bits; then
-        show_dialog_only_32_bits
-        return
+        show_dialog_only_32_bits "OBS"
     fi
     cmd=(dialog --clear --backtitle "$TITLE" --title "[ Multimedia ]" --menu "Select a script from the list:" "$wHEIGHT" "$wWIDTH" "$wHEIGHT")
 
@@ -332,7 +333,6 @@ smConfigure() {
     options=(
         Back "Back to main menu"
         Vulkan "Compile/update Vulkan Mesa driver"
-        RaspNet "Configure Raspberry Pi OS Net Install distro"
         SSIDCfg "Configure SSID (WPA/WPA2 with PSK)"
         Joypad "Configure WII, XBox360 controller"
         Backup "Simple backup dir to run daily"
@@ -347,7 +347,6 @@ smConfigure() {
         case $choice in
         Back) break ;;
         Vulkan) ./scripts/config/vulkan.sh ;;
-        RaspNet) ./scripts/config/raspnetins.sh ;;
         SSIDCfg) ./scripts/config/ssidcfg.sh ;;
         Joypad) ./scripts/config/jpad.sh ;;
         Backup) ./scripts/config/backup.sh ;;
@@ -477,6 +476,7 @@ smOthers() {
         Synergy "Allow you to share keyboard and mouse to computers on LAN"
         Uninstall "Uninstall PiKISS :_("
         WineX86 "Install Wine X86 + Box86"
+        Zsh "Install Z Shell"
     )
 
     choices=$("${cmd[@]}" "${options[@]}" 2>&1 >/dev/tty)
@@ -498,6 +498,7 @@ smOthers() {
         Synergy) ./scripts/others/synergy.sh ;;
         Uninstall) uninstall_pikiss ;;
         WineX86) ./scripts/others/wine86.sh ;;
+        Zsh) ./scripts/others/zsh.sh ;;
         esac
     done
 }
